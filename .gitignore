@@ -23,4 +23,14 @@
 hs_err_pid*
 replay_pid*
 
+# IDEA files
+.idea/
+.vscode/
+
+# Maven files
 target/
+
+# Gradle files
+build/
+
+
