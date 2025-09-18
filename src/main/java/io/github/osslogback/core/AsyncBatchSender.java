@@ -204,8 +204,8 @@ public final class AsyncBatchSender implements AutoCloseable {
     }
 
     private String buildObjectKey() {
-        Instant now = Instant.now();
-        String date = now.toString().substring(0, 10); // YYYY-MM-DD
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(java.time.ZoneOffset.UTC);
+        String date = fmt.format(Instant.now());
         String uuid = UUID.randomUUID().toString();
         return config.objectKeyPrefix + config.appName + "/" + date + "/" + uuid + ".jsonl" + (config.gzip ? ".gz" : "");
     }

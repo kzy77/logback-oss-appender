@@ -107,12 +107,12 @@ public final class OssAsyncAppender extends AppenderBase<ILoggingEvent> {
                     shutdownHook = null;
                 }
             }
-            if (sender != null) sender.close();
         } catch (Exception ignore) {
-        } finally {
-            if (uploader != null) uploader.close();
-            super.stop();
         }
+        // 分开关闭，确保任意一个报错不会阻塞另一个关闭
+        try { if (sender != null) sender.close(); } catch (Exception ignore) {}
+        try { if (uploader != null) uploader.close(); } catch (Exception ignore) {}
+        super.stop();
     }
 
     /**
@@ -123,7 +123,7 @@ public final class OssAsyncAppender extends AppenderBase<ILoggingEvent> {
         if (!isStarted()) return;
         try {
             String line = layout.doLayout(eventObject);
-            if (line == null) return;
+            if (line == null || line.isEmpty()) return;
             line = line.endsWith("\n") ? line.substring(0, line.length() - 1) : line;
             sender.offer(line);
         } catch (Exception e) {
