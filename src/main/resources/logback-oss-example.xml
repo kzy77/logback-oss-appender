@@ -1,0 +1,34 @@
+<configuration>
+    <appender name="OSS" class="io.github.osslogback.logback.OssAsyncAppender">
+        <endpoint>${OSS_ENDPOINT}</endpoint>
+        <accessKeyId>${OSS_AK}</accessKeyId>
+        <accessKeySecret>${OSS_SK}</accessKeySecret>
+        <bucket>${OSS_BUCKET}</bucket>
+        <objectKeyPrefix>logs/${HOSTNAME}/</objectKeyPrefix>
+        <appName>${APP_NAME:-demo}</appName>
+        <gzip>true</gzip>
+        <dropWhenQueueFull>false</dropWhenQueueFull>
+        <maxQueueSize>200000</maxQueueSize>
+        <maxBatchCount>5000</maxBatchCount>
+        <maxBatchBytes>4194304</maxBatchBytes>
+        <flushIntervalMillis>2000</flushIntervalMillis>
+        <offerTimeoutMillis>500</offerTimeoutMillis>
+        <maxRetries>5</maxRetries>
+        <initialBackoffMillis>200</initialBackoffMillis>
+        <backoffMultiplier>2.0</backoffMultiplier>
+        <contentType>application/x-ndjson</contentType>
+
+        <layout class="io.github.osslogback.logback.JsonLinesLayout">
+            <includeLoggerName>true</includeLoggerName>
+            <includeThreadName>true</includeThreadName>
+            <includeMdc>true</includeMdc>
+            <includeException>true</includeException>
+        </layout>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="OSS"/>
+    </root>
+</configuration>
+
+
