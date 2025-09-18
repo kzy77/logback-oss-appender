@@ -27,6 +27,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>io.github.ossappender</groupId>
+      <artifactId>log-java-producer</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>${logback.version}</version>
@@ -36,11 +41,7 @@
       <artifactId>logback-core</artifactId>
       <version>${logback.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.aliyun.oss</groupId>
-      <artifactId>aliyun-sdk-oss</artifactId>
-      <version>${aliyun.oss.version}</version>
-    </dependency>
+    <!-- aliyun 依赖由 log-java-producer 提供 -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>

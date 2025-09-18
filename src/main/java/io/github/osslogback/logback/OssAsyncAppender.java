@@ -4,7 +4,7 @@ import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Layout;
 import io.github.osslogback.core.AsyncBatchSender;
-import io.github.osslogback.oss.AliyunOssUploader;
+import io.github.osslogback.oss.AliyunOssUploaderAdapter;
 
 import java.util.Objects;
 
@@ -36,7 +36,7 @@ public final class OssAsyncAppender extends AppenderBase<ILoggingEvent> {
     private Layout<ILoggingEvent> layout;
 
     private AsyncBatchSender sender;
-    private AliyunOssUploader uploader;
+    private AliyunOssUploaderAdapter uploader;
     private boolean registerShutdownHook = true;
     private Thread shutdownHook;
 
@@ -55,7 +55,7 @@ public final class OssAsyncAppender extends AppenderBase<ILoggingEvent> {
                 addError("layout 未设置，请在 appender 中配置 <layout>...");
                 return;
             }
-            uploader = new AliyunOssUploader(endpoint, accessKeyId, accessKeySecret, bucket);
+            uploader = new AliyunOssUploaderAdapter(endpoint, accessKeyId, accessKeySecret, bucket);
             AsyncBatchSender.Config cfg = new AsyncBatchSender.Config();
             cfg.maxQueueSize = maxQueueSize;
             cfg.maxBatchCount = maxBatchCount;
