@@ -27,8 +27,12 @@ public final class JsonLinesLayout extends LayoutBase<ILoggingEvent> {
             m.put("ts", event.getTimeStamp());
             m.put("level", String.valueOf(event.getLevel()));
             m.put("message", event.getFormattedMessage());
-            if (includeLoggerName) m.put("logger", event.getLoggerName());
-            if (includeThreadName) m.put("thread", event.getThreadName());
+            if (includeLoggerName) {
+                m.put("logger", event.getLoggerName());
+            }
+            if (includeThreadName) {
+                m.put("thread", event.getThreadName());
+            }
             if (includeMdc && event.getMDCPropertyMap() != null && !event.getMDCPropertyMap().isEmpty()) {
                 m.put("mdc", event.getMDCPropertyMap());
             }
@@ -42,11 +46,17 @@ public final class JsonLinesLayout extends LayoutBase<ILoggingEvent> {
     }
 
     // region setters for logback config
-    public void setIncludeLoggerName(boolean includeLoggerName) { this.includeLoggerName = includeLoggerName; }
-    public void setIncludeThreadName(boolean includeThreadName) { this.includeThreadName = includeThreadName; }
-    public void setIncludeMdc(boolean includeMdc) { this.includeMdc = includeMdc; }
-    public void setIncludeException(boolean includeException) { this.includeException = includeException; }
+    public void setIncludeLoggerName(boolean includeLoggerName) {
+        this.includeLoggerName = includeLoggerName;
+    }
+    public void setIncludeThreadName(boolean includeThreadName) {
+        this.includeThreadName = includeThreadName;
+    }
+    public void setIncludeMdc(boolean includeMdc) {
+        this.includeMdc = includeMdc;
+    }
+    public void setIncludeException(boolean includeException) {
+        this.includeException = includeException;
+    }
     // endregion
 }
-
-

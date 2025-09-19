@@ -43,7 +43,7 @@ public final class AsyncBatchSender implements AutoCloseable {
         /** 单批最大条数 */
         public int maxBatchCount = 5_000;
         /** 单批最大字节（压缩前） */
-        public int maxBatchBytes = 4 * 1024 * 1024; // 4MiB
+        public int maxBatchBytes = 4 * 1024 * 1024;
         /** 强制刷新间隔（毫秒） */
         public long flushIntervalMillis = 2000L;
         /** 生产侧阻塞等待（无损），超时时间（毫秒），<=0 表示一直等待 */
@@ -141,9 +141,13 @@ public final class AsyncBatchSender implements AutoCloseable {
                 // drain more with limits
                 while (batch.size() < config.maxBatchCount && !queue.isEmpty()) {
                     String v = queue.peek();
-                    if (v == null) break;
+                    if (v == null) {
+                        break;
+                    }
                     int predictedBytes = predictedBatchBytes(batch, v);
-                    if (predictedBytes > config.maxBatchBytes) break;
+                    if (predictedBytes > config.maxBatchBytes) {
+                        break;
+                    }
                     batch.add(queue.poll());
                 }
 
@@ -187,7 +191,9 @@ public final class AsyncBatchSender implements AutoCloseable {
     }
 
     private void flushBatch(List<String> batch) throws Exception {
-        if (batch.isEmpty()) return;
+        if (batch.isEmpty()) {
+            return;
+        }
         byte[] raw = joinWithNewlines(batch);
         byte[] toSend;
         String contentEncoding = null;
@@ -270,15 +276,23 @@ public final class AsyncBatchSender implements AutoCloseable {
     }
 
     /** 获取累计丢弃条数（仅在允许丢弃时可能增加） */
-    public long getDroppedCount() { return droppedCount; }
+    public long getDroppedCount() {
+        return droppedCount;
+    }
     /** 获取累计发送批次数 */
-    public long getSentBatches() { return sentBatches; }
+    public long getSentBatches() {
+        return sentBatches;
+    }
     /** 获取累计发送记录数 */
-    public long getSentRecords() { return sentRecords; }
+    public long getSentRecords() {
+        return sentRecords;
+    }
     /** 最近错误时间戳（毫秒） */
-    public long getLastErrorTime() { return lastErrorTime; }
+    public long getLastErrorTime() {
+        return lastErrorTime;
+    }
     /** 最近错误信息 */
-    public String getLastErrorMessage() { return lastErrorMessage; }
+    public String getLastErrorMessage() {
+        return lastErrorMessage;
+    }
 }
-
-

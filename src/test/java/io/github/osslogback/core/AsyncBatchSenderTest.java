@@ -1,12 +1,8 @@
 package io.github.osslogback.core;
-
 import org.junit.jupiter.api.Test;
-
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * 异步批处理核心逻辑测试：
  * - 按条数与时间窗口触发
@@ -14,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * - gzip 开关与对象 key 生成
  */
 public class AsyncBatchSenderTest {
-
     /**
      * 验证时间窗口触发上传与 gzip 标记。
      */
@@ -29,13 +24,11 @@ public class AsyncBatchSenderTest {
         cfg.gzip = true;
         cfg.objectKeyPrefix = "test/";
         cfg.appName = "demo";
-
         try (AsyncBatchSender sender = new AsyncBatchSender(cfg, mock)) {
             sender.offer("a");
             sender.offer("b");
             Thread.sleep(300);
         }
-
         List<MockUploader.UploadRecord> rs = mock.getRecords();
         assertEquals(1, rs.size(), "应产生1个批次");
         MockUploader.UploadRecord rec = rs.get(0);
@@ -44,7 +37,6 @@ public class AsyncBatchSenderTest {
         assertEquals("application/x-ndjson", rec.contentType);
         assertEquals("gzip", rec.contentEncoding);
     }
-
     /**
      * 验证按条数上限触发分批。
      */
@@ -57,7 +49,6 @@ public class AsyncBatchSenderTest {
         cfg.maxBatchBytes = 1024 * 1024;
         cfg.flushIntervalMillis = 5_000; // 不靠时间触发
         cfg.gzip = false;
-
         try (AsyncBatchSender sender = new AsyncBatchSender(cfg, mock)) {
             sender.offer("1");
             sender.offer("2");
@@ -66,13 +57,11 @@ public class AsyncBatchSenderTest {
             Thread.sleep(150);
             sender.offer("4");
         }
-
         List<MockUploader.UploadRecord> rs = mock.getRecords();
         assertTrue(rs.size() >= 1, "至少一个批次");
         String firstBatch = new String(rs.get(0).content, StandardCharsets.UTF_8);
         assertTrue(firstBatch.contains("1") && firstBatch.contains("2") && firstBatch.contains("3"));
     }
-
     /**
      * 验证丢弃策略：队列极小，允许丢弃。
      */
@@ -85,18 +74,14 @@ public class AsyncBatchSenderTest {
         cfg.maxBatchBytes = 1024 * 1024;
         cfg.flushIntervalMillis = 1000;
         cfg.dropWhenQueueFull = true;
-
         try (AsyncBatchSender sender = new AsyncBatchSender(cfg, mock)) {
             for (int i = 0; i < 100; i++) {
                 sender.offer("x" + i);
             }
         }
-
         // 有丢弃发生
         // 由于是异步，这里只验证至少一次上传发生
         List<MockUploader.UploadRecord> rs = mock.getRecords();
         assertTrue(rs.size() >= 1);
     }
 }
-
-
