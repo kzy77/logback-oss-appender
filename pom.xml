@@ -5,8 +5,8 @@
   <artifactId>logback-oss-appender</artifactId>
   <version>0.1.0</version>
   <name>logback-oss-appender</name>
-  <description>高性能 Logback Appender，实时将日志上传至阿里云 OSS</description>
-  <url>https://github.com/oss-logback/logback-oss-appender</url>
+  <description>高性能 Logback Appender，支持 AWS S3 兼容对象存储（阿里云OSS、腾讯云COS、MinIO等）</description>
+  <url>https://github.com/oss-logback/logback-s3-appender</url>
 
   <licenses>
     <license>
@@ -20,17 +20,12 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <logback.version>1.2.13</logback.version>
-    <aliyun.oss.version>3.17.3</aliyun.oss.version>
+    <aws.sdk.version>2.28.16</aws.sdk.version>
     <slf4j.version>1.7.36</slf4j.version>
     <junit.version>5.10.2</junit.version>
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>io.github.ossappender</groupId>
-      <artifactId>log-java-producer</artifactId>
-      <version>0.1.0</version>
-    </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
@@ -41,7 +36,12 @@
       <artifactId>logback-core</artifactId>
       <version>${logback.version}</version>
     </dependency>
-    <!-- aliyun 依赖由 log-java-producer 提供 -->
+    <!-- AWS SDK for S3 compatibility -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+      <version>${aws.sdk.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>

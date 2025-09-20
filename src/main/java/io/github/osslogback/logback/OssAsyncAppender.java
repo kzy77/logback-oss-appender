@@ -5,26 +5,32 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.status.ErrorStatus;
 import io.github.osslogback.core.AsyncBatchSender;
-import io.github.osslogback.oss.AliyunOssUploaderAdapter;
+import io.github.osslogback.s3.S3CompatibleConfig;
+import io.github.osslogback.s3.S3CompatibleUploader;
 
 import java.util.Objects;
 
 /**
- * Logback Appender 主实现。
+ * S3兼容对象存储 Logback Appender：
+ * - 支持AWS S3、阿里云OSS、腾讯云COS、MinIO、Cloudflare R2等所有S3兼容存储
+ * - 基于AWS SDK v2构建，提供统一的对象存储接口
  * - 继承 UnsynchronizedAppenderBase 避免线程同步开销
  * - 依赖 Encoder 将 ILoggingEvent 序列化为字符串
  * - 核心逻辑委托给 AsyncBatchSender
  */
 public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
-    // required by logback
+    // Logback必需
     private Encoder<ILoggingEvent> encoder;
-    // OSS client config
+
+    // S3兼容存储配置 - 必需参数
     private String endpoint;
+    private String region;
     private String accessKeyId;
     private String accessKeySecret;
     private String bucket;
-    // appender behavior
+
+    // 应用行为配置 - 可选参数，提供最优默认值
     private String appName = "default-app";
     private String objectKeyPrefix = "logs/";
     private int maxQueueSize = 200_000;
@@ -48,11 +54,12 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
             return;
         }
         try {
-            Objects.requireNonNull(endpoint, "endpoint must be set");
+            // 验证必需参数
             Objects.requireNonNull(accessKeyId, "accessKeyId must be set");
             Objects.requireNonNull(accessKeySecret, "accessKeySecret must be set");
             Objects.requireNonNull(bucket, "bucket must be set");
 
+            // 构建配置
             AsyncBatchSender.Config config = new AsyncBatchSender.Config();
             config.appName = this.appName;
             config.objectKeyPrefix = this.objectKeyPrefix;
@@ -68,13 +75,15 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
             config.initialBackoffMillis = this.initialBackoffMillis;
             config.backoffMultiplier = this.backoffMultiplier;
 
-            AliyunOssUploaderAdapter uploader = new AliyunOssUploaderAdapter(
-                    endpoint, accessKeyId, accessKeySecret, bucket
+            // 创建S3兼容上传器
+            S3CompatibleUploader uploader = S3CompatibleConfig.createUploader(
+                    endpoint, region, accessKeyId, accessKeySecret, bucket, objectKeyPrefix
             );
+
             this.sender = new AsyncBatchSender(config, uploader);
             super.start();
         } catch (Exception e) {
-            addError("Failed to start OssAsyncAppender", e);
+            addError("Failed to start S3CompatibleAppender", e);
         }
     }
 
@@ -84,7 +93,7 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
             return;
         }
         try {
-            // logback encoder is not thread-safe
+            // logback encoder 不是线程安全的
             byte[] encoded = encoder.encode(eventObject);
             sender.offer(new String(encoded, java.nio.charset.StandardCharsets.UTF_8));
         } catch (Exception e) {
@@ -110,6 +119,9 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
     }
     public void setEndpoint(String endpoint) {
         this.endpoint = endpoint;
+    }
+    public void setRegion(String region) {
+        this.region = region;
     }
     public void setAccessKeyId(String accessKeyId) {
         this.accessKeyId = accessKeyId;
