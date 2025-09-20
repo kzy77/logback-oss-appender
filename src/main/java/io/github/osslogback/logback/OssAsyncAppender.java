@@ -4,9 +4,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.status.ErrorStatus;
-import io.github.osslogback.core.AsyncBatchSender;
-import io.github.osslogback.s3.S3CompatibleConfig;
-import io.github.osslogback.s3.S3CompatibleUploader;
+import io.github.osslogback.adapter.S3LogbackAdapter;
 
 import java.util.Objects;
 
@@ -16,7 +14,7 @@ import java.util.Objects;
  * - 基于AWS SDK v2构建，提供统一的对象存储接口
  * - 继承 UnsynchronizedAppenderBase 避免线程同步开销
  * - 依赖 Encoder 将 ILoggingEvent 序列化为字符串
- * - 核心逻辑委托给 AsyncBatchSender
+ * - 核心逻辑委托给 S3LogbackAdapter（复用log-java-producer的高性能组件）
  */
 public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
@@ -31,21 +29,18 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
     private String bucket;
 
     // 应用行为配置 - 可选参数，提供最优默认值
-    private String appName = "default-app";
-    private String objectKeyPrefix = "logs/";
+    private String keyPrefix = "logs/";
     private int maxQueueSize = 200_000;
     private int maxBatchCount = 5_000;
     private int maxBatchBytes = 4 * 1024 * 1024;
-    private long flushIntervalMillis = 2000L;
-    private long offerTimeoutMillis = 500L;
+    private long flushIntervalMs = 2000L;
     private boolean dropWhenQueueFull = false;
-    private boolean gzip = true;
-    private String contentType = "application/x-ndjson";
+    private boolean multiProducer = false;
     private int maxRetries = 5;
-    private long initialBackoffMillis = 200L;
-    private double backoffMultiplier = 2.0;
+    private long baseBackoffMs = 200L;
+    private long maxBackoffMs = 10000L;
 
-    private AsyncBatchSender sender;
+    private S3LogbackAdapter adapter;
 
     @Override
     public void start() {
@@ -59,28 +54,25 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
             Objects.requireNonNull(accessKeySecret, "accessKeySecret must be set");
             Objects.requireNonNull(bucket, "bucket must be set");
 
-            // 构建配置
-            AsyncBatchSender.Config config = new AsyncBatchSender.Config();
-            config.appName = this.appName;
-            config.objectKeyPrefix = this.objectKeyPrefix;
+            // 构建S3LogbackAdapter配置
+            S3LogbackAdapter.Config config = new S3LogbackAdapter.Config();
+            config.endpoint = this.endpoint;
+            config.region = this.region;
+            config.accessKeyId = this.accessKeyId;
+            config.accessKeySecret = this.accessKeySecret;
+            config.bucket = this.bucket;
+            config.keyPrefix = this.keyPrefix;
             config.maxQueueSize = this.maxQueueSize;
             config.maxBatchCount = this.maxBatchCount;
             config.maxBatchBytes = this.maxBatchBytes;
-            config.flushIntervalMillis = this.flushIntervalMillis;
-            config.offerTimeoutMillis = this.offerTimeoutMillis;
+            config.flushIntervalMs = this.flushIntervalMs;
             config.dropWhenQueueFull = this.dropWhenQueueFull;
-            config.gzip = this.gzip;
-            config.contentType = this.contentType;
+            config.multiProducer = this.multiProducer;
             config.maxRetries = this.maxRetries;
-            config.initialBackoffMillis = this.initialBackoffMillis;
-            config.backoffMultiplier = this.backoffMultiplier;
+            config.baseBackoffMs = this.baseBackoffMs;
+            config.maxBackoffMs = this.maxBackoffMs;
 
-            // 创建S3兼容上传器
-            S3CompatibleUploader uploader = S3CompatibleConfig.createUploader(
-                    endpoint, region, accessKeyId, accessKeySecret, bucket, objectKeyPrefix
-            );
-
-            this.sender = new AsyncBatchSender(config, uploader);
+            this.adapter = new S3LogbackAdapter(config);
             super.start();
         } catch (Exception e) {
             addError("Failed to start S3CompatibleAppender", e);
@@ -89,13 +81,13 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
 
     @Override
     protected void append(ILoggingEvent eventObject) {
-        if (!isStarted() || sender == null) {
+        if (!isStarted() || adapter == null) {
             return;
         }
         try {
             // logback encoder 不是线程安全的
             byte[] encoded = encoder.encode(eventObject);
-            sender.offer(new String(encoded, java.nio.charset.StandardCharsets.UTF_8));
+            adapter.offer(new String(encoded, java.nio.charset.StandardCharsets.UTF_8));
         } catch (Exception e) {
             addError("Failed to encode and send log event", e);
         }
@@ -103,11 +95,11 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
 
     @Override
     public void stop() {
-        if (sender != null) {
+        if (adapter != null) {
             try {
-                sender.close();
+                adapter.close();
             } catch (Exception e) {
-                addError("Failed to gracefully close sender", e);
+                addError("Failed to gracefully close adapter", e);
             }
         }
         super.stop();
@@ -132,11 +124,8 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
     public void setBucket(String bucket) {
         this.bucket = bucket;
     }
-    public void setAppName(String appName) {
-        this.appName = appName;
-    }
-    public void setObjectKeyPrefix(String objectKeyPrefix) {
-        this.objectKeyPrefix = objectKeyPrefix;
+    public void setKeyPrefix(String keyPrefix) {
+        this.keyPrefix = keyPrefix;
     }
     public void setMaxQueueSize(int maxQueueSize) {
         this.maxQueueSize = maxQueueSize;
@@ -147,29 +136,23 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
     public void setMaxBatchBytes(int maxBatchBytes) {
         this.maxBatchBytes = maxBatchBytes;
     }
-    public void setFlushIntervalMillis(long flushIntervalMillis) {
-        this.flushIntervalMillis = flushIntervalMillis;
-    }
-    public void setOfferTimeoutMillis(long offerTimeoutMillis) {
-        this.offerTimeoutMillis = offerTimeoutMillis;
+    public void setFlushIntervalMs(long flushIntervalMs) {
+        this.flushIntervalMs = flushIntervalMs;
     }
     public void setDropWhenQueueFull(boolean dropWhenQueueFull) {
         this.dropWhenQueueFull = dropWhenQueueFull;
     }
-    public void setGzip(boolean gzip) {
-        this.gzip = gzip;
-    }
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
+    public void setMultiProducer(boolean multiProducer) {
+        this.multiProducer = multiProducer;
     }
     public void setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
     }
-    public void setInitialBackoffMillis(long initialBackoffMillis) {
-        this.initialBackoffMillis = initialBackoffMillis;
+    public void setBaseBackoffMs(long baseBackoffMs) {
+        this.baseBackoffMs = baseBackoffMs;
     }
-    public void setBackoffMultiplier(double backoffMultiplier) {
-        this.backoffMultiplier = backoffMultiplier;
+    public void setMaxBackoffMs(long maxBackoffMs) {
+        this.maxBackoffMs = maxBackoffMs;
     }
     // endregion
 }

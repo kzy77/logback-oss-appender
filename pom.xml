@@ -20,12 +20,17 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <logback.version>1.2.13</logback.version>
-    <aws.sdk.version>2.28.16</aws.sdk.version>
     <slf4j.version>1.7.36</slf4j.version>
     <junit.version>5.10.2</junit.version>
   </properties>
 
   <dependencies>
+    <!-- 复用高性能核心组件 -->
+    <dependency>
+      <groupId>io.github.ossappender</groupId>
+      <artifactId>log-java-producer</artifactId>
+      <version>0.1.0</version>
+    </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
@@ -35,12 +40,6 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
       <version>${logback.version}</version>
-    </dependency>
-    <!-- AWS SDK for S3 compatibility -->
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>s3</artifactId>
-      <version>${aws.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
