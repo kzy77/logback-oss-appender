@@ -1,8 +1,9 @@
-# logback-oss-appender
+# Logback OSS Appender
 
 高性能 Logback Appender SDK，将应用日志实时上传到阿里云 OSS。
 
-特性：
+## 特性
+
 - 不落盘：日志直接入内存队列并异步上传
 - 无需改造：仅配置 logback.xml 即可接入
 - 异步高吞吐：批处理、压缩、连接复用
@@ -17,7 +18,7 @@
   <groupId>io.github.oss-logback</groupId>
   <artifactId>logback-oss-appender</artifactId>
   <version>0.1.0</version>
-  </dependency>
+</dependency>
 ```
 
 2) 配置方式A（低侵入，推荐）：在现有 `logback.xml` 中新增 appender
@@ -63,4 +64,3 @@
 ## 许可证
 
 Apache-2.0
-
