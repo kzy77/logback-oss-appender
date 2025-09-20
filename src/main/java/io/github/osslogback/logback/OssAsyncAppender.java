@@ -27,14 +27,17 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
     // appender behavior
     private String appName = "default-app";
     private String objectKeyPrefix = "logs/";
-    private int maxQueueSize = 100_000;
+    private int maxQueueSize = 200_000;
     private int maxBatchCount = 5_000;
     private int maxBatchBytes = 4 * 1024 * 1024;
     private long flushIntervalMillis = 2000L;
+    private long offerTimeoutMillis = 500L;
     private boolean dropWhenQueueFull = false;
     private boolean gzip = true;
+    private String contentType = "application/x-ndjson";
     private int maxRetries = 5;
     private long initialBackoffMillis = 200L;
+    private double backoffMultiplier = 2.0;
 
     private AsyncBatchSender sender;
 
@@ -57,10 +60,13 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
             config.maxBatchCount = this.maxBatchCount;
             config.maxBatchBytes = this.maxBatchBytes;
             config.flushIntervalMillis = this.flushIntervalMillis;
+            config.offerTimeoutMillis = this.offerTimeoutMillis;
             config.dropWhenQueueFull = this.dropWhenQueueFull;
             config.gzip = this.gzip;
+            config.contentType = this.contentType;
             config.maxRetries = this.maxRetries;
             config.initialBackoffMillis = this.initialBackoffMillis;
+            config.backoffMultiplier = this.backoffMultiplier;
 
             AliyunOssUploaderAdapter uploader = new AliyunOssUploaderAdapter(
                     endpoint, accessKeyId, accessKeySecret, bucket
@@ -132,17 +138,26 @@ public final class OssAsyncAppender extends UnsynchronizedAppenderBase<ILoggingE
     public void setFlushIntervalMillis(long flushIntervalMillis) {
         this.flushIntervalMillis = flushIntervalMillis;
     }
+    public void setOfferTimeoutMillis(long offerTimeoutMillis) {
+        this.offerTimeoutMillis = offerTimeoutMillis;
+    }
     public void setDropWhenQueueFull(boolean dropWhenQueueFull) {
         this.dropWhenQueueFull = dropWhenQueueFull;
     }
     public void setGzip(boolean gzip) {
         this.gzip = gzip;
     }
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
     public void setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
     }
     public void setInitialBackoffMillis(long initialBackoffMillis) {
         this.initialBackoffMillis = initialBackoffMillis;
+    }
+    public void setBackoffMultiplier(double backoffMultiplier) {
+        this.backoffMultiplier = backoffMultiplier;
     }
     // endregion
 }
